@@ -31,7 +31,8 @@ namespace ElevatorRaspPi
         GpioController gpio;
         GpioPin pin6, pin5;
         GpioPinValue state = GpioPinValue.High;
-        bool chamado, observer;
+        bool chamado, observer, lightMonitor;
+        string LDRvalue;
         DispatcherTimer timer;
 
         public MainPage()
@@ -102,13 +103,16 @@ namespace ElevatorRaspPi
         private void Timer_Tick(object sender, object e)
         {
             readPin();
+            checkLight();
         }
 
         private void readPin()
         {
-            string value = pin5.Read().ToString();
-            if (value == "Low")
+            LDRvalue = pin5.Read().ToString();
+            if (LDRvalue == "Low")
             {
+                //Flag that someone called the elevator:
+                lightMonitor = true;
                 if (chamado)
                 {
                     observer = true;
@@ -126,6 +130,22 @@ namespace ElevatorRaspPi
                     sendNotification();
                 }
             }
+        }
+
+        private void checkLight()
+        {
+            //If someone has called elevator and the LDR signed that the light was turned off, the elevador has arrived.
+            if (lightMonitor && LDRvalue == "High")
+            {
+                lightMonitor = false;
+                //Send data to SQL Azure:
+                saveData(DateTime.Now);
+            }
+        }
+
+        private void saveData(DateTime dt)
+        {
+
         }
 
         async private void sendNotification()
